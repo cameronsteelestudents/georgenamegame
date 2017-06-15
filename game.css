@@ -1,0 +1,21 @@
+body {
+	overflow: hidden;
+}
+
+#shop {
+	position: absolute;
+	top: 0;
+	left: 0;
+	background: rgba(255, 0, 0, 0.5);
+	display: none;
+}
+
+#shop img {
+	width: 100px;
+}
+
+#shopButton {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
