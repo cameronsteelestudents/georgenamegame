@@ -39,12 +39,15 @@ function initialize() {
   // var dragon = new Enemy(0, 0, 50, 50, 'dragon');
   // var flyingEnemy = new Enemy(0, 0, 125, 125, 'stickman');
   var spikeguy = new Enemy(400, -300, 150, 150, 'spikeball');
+  spikeguy.tags.push('keyful');
+
+  var vaultDoor = new Entity(800, -400, 100, 100, 'images/vaultDoor.png');
 
   var superShuriken = new Item(900, -200, 100, 100, 'images/MetallicaStar.png', 'metallicStar');
   superShuriken.static = true;
   var supaHammer = new Item (500, -200, 150, 150, 'images/supahamma.png', 'supaHamma');
   supaHammer.static = true;
-  supaSword = new Item (0, 0, 100, 100, 'images/megaSword.png');
+  supaSword = new Item (0, 0, 100, 100, 'images/megasword.png');
   supaSword.static = true;
   supaSword.visible = false;
 
@@ -79,7 +82,6 @@ swordButton.addEventListener('click', function() {
     supaSword.relativeTo = player;
 
     currentMoney -= 170;
-
   } else {
     alert('naw man u aint got dat $$$$');
   }
@@ -87,7 +89,12 @@ swordButton.addEventListener('click', function() {
 
 var iceArmor = document.getElementById('iceArmor');
 iceArmor.addEventListener('click', function() {
-  //// finish iceArmor code next time
+  if(currentMoney > 230) {
+    player.changeHealth(50);
+    alert('u bot dat amor');
+  } else {
+    alert('naw man yo aint got dat $$$$$$$$');
+  }
 });
 
 
@@ -232,6 +239,10 @@ function Character(x, y, w, h, imageURL, type) {
     if(me.health <= 0) {
       me.remove();
       generateRandomLoot(me.position.x, me.position.y);
+
+      if(me.tags.indexOf('keyful') + 1 > 0) {
+        // LEFT OFF HERE MAKE A KEY, AND MAKE IT WORK WITH THE DOOR!
+      }
     } 
   }
 
@@ -481,6 +492,12 @@ function update() {
   for (var entityIndex = 0; entityIndex < entities.length; entityIndex++) {
     var entity = entities[entityIndex]; 
 
+    if(!entity.static && !entity.isGrounded) {
+      entity.velocity.y -= 0.1 * entity.mass;
+    }
+
+    entity.position.add(entity.velocity);
+
     if(!entity.visible) {
       continue;
     }
@@ -495,12 +512,6 @@ function update() {
       }
 
       if(checkCollision(entity, collider)) {
-        if(collider.static && collider.tags.indexOf('healthbar') == -1 && !entity.isGrounded) {
-          entity.isGrounded = true;
-          entity.velocity.y = 0;
-          staticCollision = true;
-        }
-
         if(entity == player) {
           if(collider.tags.indexOf('coin') != -1) {
             currentMoney += collider.value;
@@ -528,8 +539,12 @@ function update() {
             throwVelocity.scale(10);
             player.velocity = throwVelocity;
           }
+        }
 
-
+        if(collider.static && collider.tags.indexOf('healthbar') == -1) {
+          entity.isGrounded = true;
+          entity.velocity.y = 0;
+          staticCollision = true;
         }
 
         if(entity.tags.indexOf('character') != -1) {
@@ -547,15 +562,7 @@ function update() {
       }
     }
 
-    if(!staticCollision) {
-      entity.isGrounded = false;
-    }
-
-    if(!entity.static && !entity.isGrounded) {
-      entity.velocity.y -= 0.1 * entity.mass;
-    }
-
-    entity.position.add(entity.velocity);
+    entity.isGrounded = staticCollision;
 
     var drawX = entity.position.x;
     var drawY = entity.position.y;
