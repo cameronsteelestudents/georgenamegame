@@ -1,24 +1,26 @@
 var gameCanvas = document.getElementById('gameCanvas');
 var context = gameCanvas.getContext('2d');
 
-var shopButton = document.getElementById('shopButton');
-shopButton.addEventListener('click', function() {
-  var shop = document.getElementById('shop');
-  shop.style.display = 'block';
-});
-
 var entities = []; 
 
 /*
 TO DO LIST
-  1. completed
+  1.completed
   2.make a store (buy armor,weapons,etc.)
   3.make some armor
   4.make some weapons
+  5.powerups
+  6.more enemies
   7.make levels/stages
   8.make a maze, castle,structure,etc.
   9.make complicated 'gravity' maze (extra hard)
   10.
+  11.
+  12.
+  13.
+  14.
+  15.
+
 */
 
 var xDirection = 0;
@@ -29,15 +31,22 @@ var currentMoney = 0;
 var speed = 0.55;
 
 var player;
+var supaSword;
 function initialize() {
   player = new Character(0, -100, 50, 50,'images/player.png');
+
+  // var dragon = new Enemy(0, 0, 50, 50, 'dragon');
   // var dragon = new Enemy(0, 0, 50, 50, 'dragon');
   // var flyingEnemy = new Enemy(0, 0, 125, 125, 'stickman');
+  var spikeguy = new Enemy(400, -300, 150, 150, 'spikeball');
 
   var superShuriken = new Item(900, -200, 100, 100, 'images/MetallicaStar.png', 'metallicStar');
   superShuriken.static = true;
   var supaHammer = new Item (500, -200, 150, 150, 'images/supahamma.png', 'supaHamma');
   supaHammer.static = true;
+  supaSword = new Item (0, 0, 100, 100, 'images/megaSword.png');
+  supaSword.static = true;
+  supaSword.visible = false;
 
   var brick = new Entity(0,-550, 600, 50, 'images/brick.jpg');
   brick.static = true;
@@ -48,7 +57,39 @@ function initialize() {
   var saw = new Entity(175,-515 ,75 , 75, 'images/saw.png');
   saw.tags.push('saw');
   saw.static = true;
+
 }
+
+var shopButton = document.getElementById('shopButton');
+shopButton.addEventListener('click', function() {
+  var shop = document.getElementById('shop');
+  shop.style.display = 'block';
+});
+
+var swordButton = document.getElementById('swordButton');
+swordButton.addEventListener('click', function() {
+  // buy?
+  // ask?
+  // price?
+  // how to remove coins?
+  if(currentMoney > 170) {
+    alert('u bot dat sowd');
+    player.equippedItem = supaSword;
+    supaSword.visible = true;
+    supaSword.relativeTo = player;
+
+    currentMoney -= 170;
+
+  } else {
+    alert('naw man u aint got dat $$$$');
+  }
+});
+
+var iceArmor = document.getElementById('iceArmor');
+iceArmor.addEventListener('click', function() {
+  //// finish iceArmor code next time
+});
+
 
 window.addEventListener('keydown', function(event) {
   if(event.keyCode == 87) {
@@ -80,11 +121,12 @@ window.addEventListener('keydown', function(event) {
     attackYDirection = -1;
   } else if(event.keyCode == 74 && player.isGrounded == true) {
     //j just jump
-    player.velocity.y = 10;
-    player.position.y += 5;
-  } else if(event.keycode == 77) {
+    player.velocity.y = 100;
+    player.position.y += 100;
+    player.isGrounded = false;
+  } else if(event.keyCode == 77) {
     //money
-    currentMoney += 12*10^45;
+    currentMoney += 1200;
   }
 });
 
@@ -173,7 +215,7 @@ function Character(x, y, w, h, imageURL, type) {
   me.healthbar = new Entity(0, 20, me.dimensions.x, 10);
   me.healthbar.relativeTo = me;
   me.healthbar.static = true;
-
+  me.healthbar.tags.push('healthbar');
   me.equippedItem = null;
   // me.equippedItems = [];
 
@@ -203,11 +245,16 @@ function Enemy(x, y, w, h, type) {
     imageURL = 'images/dragon.png';
   } else if(type == "stickman"){
     imageURL = 'images/stickman.png';
+  } else if(type == 'spikeball') {
+    imageURL = 'images/spikeguy.png'
   }
 
   var me = this;
 
   Character.call(this, x, y, w, h, imageURL, 'enemy');
+
+  me.tags.push('enemy');
+  me.tags.push(type);
 
   var attackSpeed = 2;
   var attackTimer = 0;
@@ -230,6 +277,11 @@ function Enemy(x, y, w, h, type) {
 
       // check x difference
       // if it's small, create rock and drop it on player
+    } else if(type == 'spikeball') {
+      var targetPosition = new Vector2D(player.position.x, me.position.y);
+      var targetDirection = targetPosition.subtract(me.position);
+      targetDirection.normalize();
+      me.velocity = targetDirection;
     }
   }
 
@@ -269,12 +321,14 @@ function Item(x, y, w, h, imageURL, purpose){
   var me = this;
   me.tags.push('item');
   me.purpose = purpose;
+  me.damage = 10;
 }
 
 function Entity(x, y, w, h, imageURL) {
   var me = this;
 
   this.position = new Vector2D(x, y);
+  this.worldPosition = new Vector2D(x, y);
   this.dimensions = new Vector2D(w, h);
   this.velocity = new Vector2D(0, 0);
   this.static = false;
@@ -282,6 +336,7 @@ function Entity(x, y, w, h, imageURL) {
   this.mass = 1;
   this.relativeTo = null;
   this.tags = [];
+  this.visible = true;
 
   this.imageURL = imageURL;
   if(imageURL) {
@@ -333,7 +388,6 @@ function attack(type) {
     return;
   }                                                                               
 
-
   if(player.equippedItem == null) {
     // default attack code
 
@@ -349,7 +403,7 @@ function attack(type) {
 
     superShuriken.velocity.x = superShurikenSpeed * attackXDirection;
     superShuriken.velocity.y = superShurikenSpeed * attackYDirection;
-  } else if(player.equippedItem.purpose = 'supaHammer') {
+  } else if(player.equippedItem.purpose == 'supaHammer') {
     // LEFT OFF ON HAMMER
     var supaHammer = new Projectile(player.position.x, player.position.y, 50, 50, 'images/supahamma.png', player);
     supaHammer.damage = 5;
@@ -358,6 +412,8 @@ function attack(type) {
 
     supaHammer.velocity.x = supaHammerSpeed * attackXDirection;
     supaHammer.velocity.y = supaHammerSpeed * attackYDirection;
+  } else if(player.equippedItem.purpose == 'supaSword') {
+
   }
 }
 
@@ -373,15 +429,15 @@ function movePlayer(x, y) {
 }
 
 function checkCollision(entity1, entity2) {
-  var leftX1 = entity1.position.x;
-  var rightX1 = entity1.position.x + entity1.dimensions.x;
-  var topY1 = entity1.position.y;
-  var bottomY1 = entity1.position.y - entity1.dimensions.y;
+  var leftX1 = entity1.worldPosition.x;
+  var rightX1 = entity1.worldPosition.x + entity1.dimensions.x;
+  var topY1 = entity1.worldPosition.y;
+  var bottomY1 = entity1.worldPosition.y - entity1.dimensions.y;
 
-  var leftX2 = entity2.position.x;
-  var rightX2 = entity2.position.x + entity2.dimensions.x;
-  var topY2 = entity2.position.y;
-  var bottomY2 = entity2.position.y - entity2.dimensions.y;
+  var leftX2 = entity2.worldPosition.x;
+  var rightX2 = entity2.worldPosition.x + entity2.dimensions.x;
+  var topY2 = entity2.worldPosition.y;
+  var bottomY2 = entity2.worldPosition.y - entity2.dimensions.y;
 
   if(
     rightX1 < leftX2
@@ -402,6 +458,8 @@ function update() {
   var deltaTime = milliseconds / 1000;
   lastTime = currentTime;
 
+  console.log(player.velocity.y);
+
   // movePlayer(xDirection * speed, yDirection);
   player.velocity.x += xDirection * speed;
 
@@ -421,19 +479,23 @@ function update() {
   }
 
   for (var entityIndex = 0; entityIndex < entities.length; entityIndex++) {
-    var entity = entities[entityIndex];
+    var entity = entities[entityIndex]; 
+
+    if(!entity.visible) {
+      continue;
+    }
 
     var staticCollision = false;
 
     for (var colliderIndex = 0; colliderIndex < entities.length; colliderIndex++) {
       var collider = entities[colliderIndex];
 
-      if(entity == collider) {
+      if(entity == collider || !collider.visible) {
         continue;
       }
 
       if(checkCollision(entity, collider)) {
-        if(collider.static) {
+        if(collider.static && collider.tags.indexOf('healthbar') == -1 && !entity.isGrounded) {
           entity.isGrounded = true;
           entity.velocity.y = 0;
           staticCollision = true;
@@ -450,6 +512,14 @@ function update() {
             collider.remove();
           }
 
+          if(collider.tags.indexOf('spikeball') != -1) {
+            player.changeHealth(-200);
+            var throwVelocity = player.position.subtract(collider.position);
+            throwVelocity.normalize();
+            throwVelocity.scale(10);
+            player.velocity = throwVelocity;
+          }
+
           if(collider.tags.indexOf('saw') != -1) {
             // the player hit a saw
             player.changeHealth(-375);
@@ -458,11 +528,20 @@ function update() {
             throwVelocity.scale(10);
             player.velocity = throwVelocity;
           }
+
+
         }
 
         if(entity.tags.indexOf('character') != -1) {
           if(collider.tags.indexOf('projectile') != -1 && collider.owner != entity) {
             entity.changeHealth(-collider.damage);
+          }
+        }
+
+        if(entity.tags.indexOf('enemy') != -1) {
+          // entity is an enemy
+          if(collider == supaSword) {
+            enemy.changeHealth(-collider.damage);
           }
         }
       }
@@ -484,6 +563,9 @@ function update() {
       drawX += entity.relativeTo.position.x;
       drawY += entity.relativeTo.position.y;
     }
+
+    entity.worldPosition.x = drawX;
+    entity.worldPosition.y = drawY;
 
     if(entity.imageURL) {
       context.drawImage(
